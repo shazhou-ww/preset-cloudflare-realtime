@@ -30,6 +30,8 @@
   attachments so identity survives eviction.
 - Treat deployed Durable Object migration tags as immutable. Add a new tag for
   each class migration.
+- Keep OAuth callback URLs, session handling, and protected API routes aligned;
+  do not weaken server-side authorization.
 - Never commit `.dev.vars` or real credentials. Update only `.dev.vars.example`
   when documenting required variables.
 - Keep push deployment disabled by default. Do not deploy or enable production

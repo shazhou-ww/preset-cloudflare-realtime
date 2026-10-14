@@ -22,7 +22,8 @@ pnpm install
 This preset derives from
 [`preset-cloudflare-fullstack`](https://github.com/shazhou-ww/preset-cloudflare-fullstack).
 Its `.git-lineage.yaml` records that immediate parent. Run `git-lineage update`
-to merge later fullstack baseline changes.
+to merge later fullstack baseline changes. This preset documents its own
+capabilities and does not enumerate descendants.
 
 ## Architecture
 

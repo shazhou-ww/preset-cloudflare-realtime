@@ -10,4 +10,5 @@ export interface Bindings {
   readonly AUTH_MICROSOFT_ENTRA_ID_SECRET?: string;
   readonly AUTH_SECRET: string;
   readonly AUTH_URL?: string;
+  readonly ROOMS: DurableObjectNamespace;
 }

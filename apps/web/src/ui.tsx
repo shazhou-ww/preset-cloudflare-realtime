@@ -1,8 +1,11 @@
-import type {
-  AuthProviderDescriptor,
-  BootstrapResponse,
-  SessionResponse,
+import {
+  roomMessageMaxLength,
+  type AuthProviderDescriptor,
+  type BootstrapResponse,
+  type RoomMessage,
+  type SessionResponse,
 } from "@workspace/contracts";
+import type { FormEventHandler } from "react";
 
 export type DashboardState =
   | { readonly kind: "loading" }
@@ -13,62 +16,140 @@ export type DashboardState =
       readonly session: SessionResponse | null;
     };
 
-export function Dashboard({ state }: { readonly state: DashboardState }) {
+export type RoomConnectionStatus =
+  "idle" | "connecting" | "open" | "closed" | "error";
+
+export interface RoomViewState {
+  readonly connections: number;
+  readonly error: string | null;
+  readonly messages: readonly RoomMessage[];
+  readonly status: RoomConnectionStatus;
+}
+
+interface DashboardProps {
+  readonly state: DashboardState;
+  readonly room?: RoomViewState;
+  readonly onRoomSubmit?: FormEventHandler<HTMLFormElement>;
+}
+
+const inactiveRoom: RoomViewState = {
+  connections: 0,
+  error: null,
+  messages: [],
+  status: "idle",
+};
+
+export function Dashboard({
+  state,
+  room = inactiveRoom,
+  onRoomSubmit,
+}: DashboardProps) {
+  const isLive = state.kind === "ready" && Boolean(state.session?.user);
+
   return (
     <main className="shell">
       <header className="masthead">
-        <a className="brand" href="/" aria-label="Signal Desk home">
+        <a className="brand" href="/" aria-label="Signal Room home">
           <span className="brand-mark" aria-hidden="true" />
           <span>
-            {state.kind === "ready" ? state.bootstrap.appName : "Signal Desk"}
+            {state.kind === "ready" ? state.bootstrap.appName : "Signal Room"}
           </span>
         </a>
-        <p>Cloudflare fullstack starter</p>
+        <p>Cloudflare realtime starter</p>
       </header>
 
-      <div className="workspace">
+      <div className={`workspace${isLive ? " is-live" : ""}`}>
         <section className="briefing" aria-labelledby="briefing-title">
-          <p className="context">Identity, interface, edge</p>
-          <h1 id="briefing-title">A calm place for fast-moving work.</h1>
+          <p className="context">A durable room for work in motion</p>
+          <h1 id="briefing-title">Keep the room in sync while it sleeps.</h1>
           <p className="lede">
-            One deployable Worker serves the API and the React interface.
-            Authentication stays at the edge, close to every request.
+            One Durable Object owns each room. WebSocket hibernation preserves
+            live connections without keeping compute awake.
           </p>
 
-          <ol className="signal-track" aria-label="Application layers">
-            <li>
-              <span className="track-node" aria-hidden="true" />
-              <strong>Identity</strong>
-              <span>Google, Microsoft, and GitHub</span>
-            </li>
-            <li>
-              <span className="track-node" aria-hidden="true" />
-              <strong>Worker</strong>
-              <span>Typed Hono routes on Cloudflare</span>
-            </li>
-            <li>
-              <span className="track-node" aria-hidden="true" />
-              <strong>Interface</strong>
-              <span>React assets on the same origin</span>
-            </li>
-          </ol>
+          {isLive ? (
+            <RoomLedger room={room} />
+          ) : (
+            <ol
+              className="signal-track"
+              aria-label="Realtime application layers"
+            >
+              <li>
+                <span className="track-node" aria-hidden="true" />
+                <strong>Identity</strong>
+                <span>Every room upgrade starts with an Auth.js session</span>
+              </li>
+              <li>
+                <span className="track-node" aria-hidden="true" />
+                <strong>Room state</strong>
+                <span>One named Durable Object coordinates each channel</span>
+              </li>
+              <li>
+                <span className="track-node" aria-hidden="true" />
+                <strong>Hibernation</strong>
+                <span>Connections survive while inactive compute sleeps</span>
+              </li>
+            </ol>
+          )}
         </section>
 
         <aside className="access" aria-labelledby="access-title">
-          <p className="context">Workspace access</p>
-          <AccessPanel state={state} />
+          <p className="context">
+            {isLive ? "Operations channel" : "Workspace access"}
+          </p>
+          <AccessPanel state={state} room={room} onRoomSubmit={onRoomSubmit} />
         </aside>
       </div>
 
       <footer>
-        <span>Worker status</span>
-        <strong>Ready at the edge</strong>
+        <span>Room transport</span>
+        <strong>Durable Objects + WebSocket hibernation</strong>
       </footer>
     </main>
   );
 }
 
-function AccessPanel({ state }: { readonly state: DashboardState }) {
+function RoomLedger({ room }: { readonly room: RoomViewState }) {
+  return (
+    <section className="room-ledger" aria-labelledby="room-ledger-title">
+      <header>
+        <h2 id="room-ledger-title">Room dispatches</h2>
+        <span>{room.connections} connected</span>
+      </header>
+      <ol aria-live="polite">
+        {room.messages.length > 0 ? (
+          room.messages.map((message) => (
+            <RoomLedgerEntry key={message.id} message={message} />
+          ))
+        ) : (
+          <li className="room-empty">
+            No dispatches yet. Send the first update.
+          </li>
+        )}
+      </ol>
+    </section>
+  );
+}
+
+function RoomLedgerEntry({ message }: { readonly message: RoomMessage }) {
+  return (
+    <li className="room-entry">
+      <time dateTime={message.sentAt}>{formatRoomTime(message.sentAt)}</time>
+      <strong>{message.author.name}</strong>
+      <p>{message.text}</p>
+    </li>
+  );
+}
+
+function AccessPanel({
+  state,
+  room,
+  onRoomSubmit,
+}: {
+  readonly state: DashboardState;
+  readonly room: RoomViewState;
+  readonly onRoomSubmit: FormEventHandler<HTMLFormElement> | undefined;
+}) {
   if (state.kind === "loading") {
     return (
       <div className="notice" role="status">
@@ -93,17 +174,52 @@ function AccessPanel({ state }: { readonly state: DashboardState }) {
   if (state.session?.user) {
     const { user } = state.session;
     return (
-      <div className="identity">
-        {user.image ? (
-          <img src={user.image} alt="" className="avatar" />
-        ) : (
-          <span className="avatar fallback" aria-hidden="true">
-            {getInitial(user.name ?? user.email ?? "S")}
-          </span>
-        )}
-        <h2 id="access-title">{user.name ?? "Signed in"}</h2>
-        {user.email ? <p>{user.email}</p> : null}
-        <a className="secondary-action" href="/api/auth/signout">
+      <div className="room-access">
+        <div className="identity compact">
+          {user.image ? (
+            <img src={user.image} alt="" className="avatar" />
+          ) : (
+            <span className="avatar fallback" aria-hidden="true">
+              {getInitial(user.name ?? user.email ?? "S")}
+            </span>
+          )}
+          <div>
+            <h2 id="access-title">{user.name ?? "Signed in"}</h2>
+            {user.email ? <p>{user.email}</p> : null}
+          </div>
+        </div>
+
+        <div className={`connection-state ${room.status}`} role="status">
+          <span aria-hidden="true" />
+          <div>
+            <strong>{getRoomStatusLabel(room.status)}</strong>
+            <p>{room.connections} active connection(s)</p>
+          </div>
+        </div>
+
+        {room.error ? (
+          <p className="room-error" role="alert">
+            {room.error}
+          </p>
+        ) : null}
+
+        <form className="composer" onSubmit={onRoomSubmit}>
+          <label htmlFor="room-message">Send a dispatch</label>
+          <textarea
+            id="room-message"
+            name="message"
+            maxLength={roomMessageMaxLength}
+            placeholder="Share the next concrete update."
+            rows={4}
+            disabled={room.status !== "open"}
+            required
+          />
+          <button type="submit" disabled={room.status !== "open"}>
+            Send update
+          </button>
+        </form>
+
+        <a className="text-action" href="/api/auth/signout">
           Sign out
         </a>
       </div>
@@ -114,8 +230,8 @@ function AccessPanel({ state }: { readonly state: DashboardState }) {
     <div className="signin">
       <h2 id="access-title">Choose an identity provider.</h2>
       <p>
-        The provider handles credentials. This Worker receives only the
-        resulting session.
+        Sign in before opening a room. The WebSocket upgrade reuses the same
+        edge session.
       </p>
       <div className="provider-list">
         {state.bootstrap.providers.length > 0 ? (
@@ -148,6 +264,31 @@ function ProviderLink({
       <span>Continue with {provider.label}</span>
     </a>
   );
+}
+
+function getRoomStatusLabel(status: RoomConnectionStatus): string {
+  switch (status) {
+    case "idle":
+      return "Waiting to connect";
+    case "connecting":
+      return "Opening the room";
+    case "open":
+      return "Room connected";
+    case "closed":
+      return "Room disconnected";
+    case "error":
+      return "Connection needs attention";
+  }
+}
+
+function formatRoomTime(value: string): string {
+  const date = new Date(value);
+  return Number.isNaN(date.valueOf())
+    ? "Unknown time"
+    : new Intl.DateTimeFormat("en", {
+        hour: "2-digit",
+        minute: "2-digit",
+      }).format(date);
 }
 
 function getInitial(value: string): string {

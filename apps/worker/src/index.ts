@@ -10,15 +10,36 @@ import { secureHeaders } from "hono/secure-headers";
 
 import { createAuthConfig, getConfiguredProviders } from "./auth.js";
 import type { Bindings } from "./env.js";
+import {
+  forwardRoomSocket,
+  getRoomIdentity,
+  parseRoomName,
+} from "./room-route.js";
 
 const app = new Hono<{ Bindings: Bindings }>();
 
-app.use("*", secureHeaders());
 app.use(
   "*",
   initAuthConfig((context) => createAuthConfig(context.env as Bindings)),
 );
 
+app.use("/api/rooms/*", verifyAuth());
+app.get("/api/rooms/:room/socket", async (context) => {
+  const roomName = parseRoomName(context.req.param("room"));
+  if (!roomName) {
+    return context.json({ error: "Invalid room name." }, 400);
+  }
+
+  const identity = getRoomIdentity(context.get("authUser").session);
+  return forwardRoomSocket(
+    context.req.raw,
+    context.env.ROOMS,
+    roomName,
+    identity,
+  );
+});
+
+app.use("*", secureHeaders());
 app.use("/api/auth/*", authHandler());
 
 app.get("/api/health", (context) =>
@@ -51,6 +72,7 @@ app.notFound((context) =>
 );
 
 export default app;
+export { RoomDurableObject } from "./room.js";
 
 export function toSessionResponse(session: Session): SessionResponse {
   return {

@@ -1,0 +1,5 @@
+version: 1
+title: Cloudflare realtime
+description:
+  Cloudflare realtime starter with React, Hono, Auth.js, Durable Objects, and
+  WebSocket hibernation.

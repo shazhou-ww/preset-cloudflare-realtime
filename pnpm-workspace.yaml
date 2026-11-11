@@ -8,25 +8,28 @@ allowBuilds:
 
 catalog:
   "@auth/core": ^0.41.3
-  "@cloudflare/workers-types": ^5.20261018.1
+  "@cloudflare/workers-types": ^5.20261108.1
   "@eslint/js": ^10.0.1
   "@fontsource-variable/instrument-sans": ^5.3.0
   "@fontsource-variable/newsreader": ^5.3.0
   "@hono/auth-js": ^1.1.1
   "@types/react": ^19.3.0
   "@types/react-dom": ^19.3.0
-  "@types/node": ^26.6.5
+  "@types/node": ^26.6.6
   "@vitejs/plugin-react": ^6.1.2
   "@vitest/coverage-v8": ^5.0.4
-  eslint: ^10.13.0
+  eslint: ^10.14.0
   globals: ^17.13.0
+  github-ci-verify: 0.1.0
   hono: ^4.13.13
   prettier: ^3.9.10
+  publint: ^0.3.25
   react: ^19.3.1
   react-dom: ^19.3.1
-  turbo: ^2.11.9
+  semver: ^7.8.5
+  turbo: ^2.11.10
   typescript: ^6.0.3
-  typescript-eslint: ^8.71.2
+  typescript-eslint: ^8.72.1
   vite: ^8.3.4
   vitest: ^5.0.4
   wrangler: ^4.151.1
@@ -42,3 +45,4 @@ minimumReleaseAgeExclude:
   - "@cloudflare/workers-types@5.20261014.1"
   - miniflare@5.20261012.0-beta
   - wrangler@4.151.0
+  - github-ci-verify@0.1.0

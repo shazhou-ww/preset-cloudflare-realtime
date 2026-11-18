@@ -22,7 +22,7 @@ catalog:
   globals: ^17.13.0
   github-ci-verify: 0.1.0
   hono: ^4.13.13
-  prettier: ^3.9.10
+  prettier: ^3.10.1
   publint: ^0.3.25
   react: ^19.3.1
   react-dom: ^19.3.1
